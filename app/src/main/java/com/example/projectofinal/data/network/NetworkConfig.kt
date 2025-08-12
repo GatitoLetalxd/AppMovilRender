@@ -23,5 +23,13 @@ object NetworkConfig {
         const val USER_PROFILE = "user/profile"
         const val UPDATE_PROFILE = "user/profile"
         const val UPLOAD_PHOTO = "user/profile/photo"
+        
+        // Endpoints para Amigos
+        const val SEARCH_USERS = "user/search" // Query: ?query=...
+        const val FRIEND_LIST = "user/friends"
+        const val PENDING_REQUESTS = "user/friends/pending"
+        const val SEND_REQUEST = "user/friends/request/{friendId}"
+        const val ACCEPT_REQUEST = "user/friends/accept/{friendId}"
+        const val REJECT_REQUEST = "user/friends/reject/{friendId}"
     }
 }

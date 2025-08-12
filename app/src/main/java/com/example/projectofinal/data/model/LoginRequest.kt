@@ -1,6 +1,8 @@
 package com.example.projectofinal.data.model
 
+import com.google.gson.annotations.SerializedName
+
 data class LoginRequest(
-    val correo: String, // O el campo que use tu API para el identificador, ej: username
-    val contraseña: String
+    @SerializedName("correo") val correo: String,
+    @SerializedName("contraseña") val contrasena: String
 )

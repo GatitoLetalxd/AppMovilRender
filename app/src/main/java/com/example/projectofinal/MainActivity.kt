@@ -1,6 +1,5 @@
 package com.example.projectofinal
 
-import AppNavigationGraph
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,6 +10,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel // Importante para el viewModel delegado
+import com.example.projectofinal.navigation.AppNavigationGraph
 import com.example.projectofinal.ui.theme.ProjectoFinalDetailedTheme
 import com.example.projectofinal.viewmodel.AuthViewModel
 import com.example.projectofinal.viewmodel.ViewModelFactoryHelper

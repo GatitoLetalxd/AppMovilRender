@@ -110,7 +110,7 @@ fun MainScreen(
     val navBackStackEntry by mainScreenNavController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: MainScreenRoutes.WELCOME
 
-    val displayName by authViewModel.currentDisplayName.collectAsState()
+    val displayName by authViewModel.currentDisplayName.collectAsState(initial = null)
 
     var topBarTitle by remember { mutableStateOf("") }
     LaunchedEffect(currentRoute, displayName) {

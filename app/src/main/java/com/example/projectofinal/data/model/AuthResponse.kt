@@ -14,8 +14,8 @@ data class UserDetails(
     val id: Int?,
     @SerializedName("nombre")
     val nombre: String?,
-    @SerializedName("correo")
-    val correo: String?,
+    @SerializedName("email")
+    val email: String?,
     @SerializedName("rol")
     val rol: String?
     // foto_perfil y fecha_registro NO están aquí

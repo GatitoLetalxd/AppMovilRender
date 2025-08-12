@@ -1,26 +1,13 @@
 package com.example.projectofinal.data.network
 
-import com.example.projectofinal.data.model.AuthResponse
-import com.example.projectofinal.data.model.GenericResponse
-import com.example.projectofinal.data.model.LoginRequest
-import com.example.projectofinal.data.model.RegisterRequest
-import com.example.projectofinal.data.model.UserDetails
-import com.example.projectofinal.data.model.UserProfile
-import com.example.projectofinal.data.model.UserProfileData
-import com.example.projectofinal.data.model.UserProfileUpdateRequest
-import com.google.gson.annotations.SerializedName
+import com.example.projectofinal.data.model.*
 import okhttp3.MultipartBody
 import retrofit2.Response
-import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.Header
-import retrofit2.http.Multipart
-import retrofit2.http.POST
-import retrofit2.http.PUT
-import retrofit2.http.Part
+import retrofit2.http.*
 
 interface ApiService {
 
+    // --- Autenticación ---
     @POST(NetworkConfig.Endpoints.LOGIN)
     suspend fun loginUser(
         @Body loginRequest: LoginRequest
@@ -31,7 +18,7 @@ interface ApiService {
         @Body registerRequest: RegisterRequest
     ): Response<AuthResponse>
 
-    // Endpoints de Usuario (Perfil)
+    // --- Perfil de Usuario ---
     @GET(NetworkConfig.Endpoints.USER_PROFILE)
     suspend fun getUserProfile(
         @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String
@@ -41,7 +28,7 @@ interface ApiService {
     suspend fun updateUserProfile(
         @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String,
         @Body profileData: UserProfileUpdateRequest
-    ): Response<UserProfileData>
+    ): Response<UpdateProfileResponse>
 
     @Multipart
     @POST(NetworkConfig.Endpoints.UPLOAD_PHOTO)
@@ -49,15 +36,39 @@ interface ApiService {
         @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String,
         @Part photo: MultipartBody.Part
     ): Response<GenericResponse>
-}
 
-data class UserProfile(
-    val id: Int?,
-    val nombre: String?,
-    val correo: String?,
-    val rol: String?,
-    @SerializedName("foto_perfil")
-    val fotoPerfilUrl: String?,
-    @SerializedName("fecha_registro")
-    val fechaRegistro: String?
-)
+    // --- Amigos y Búsqueda ---
+    @GET(NetworkConfig.Endpoints.SEARCH_USERS)
+    suspend fun searchUsers(
+        @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String,
+        @Query("query") query: String
+    ): Response<List<UserSearchResult>>
+
+    @GET(NetworkConfig.Endpoints.FRIEND_LIST)
+    suspend fun getFriends(
+        @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String
+    ): Response<List<Friend>>
+
+    @GET(NetworkConfig.Endpoints.PENDING_REQUESTS)
+    suspend fun getPendingFriendRequests(
+        @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String
+    ): Response<List<FriendRequest>>
+
+    @POST(NetworkConfig.Endpoints.SEND_REQUEST)
+    suspend fun sendFriendRequest(
+        @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String,
+        @Path("friendId") friendId: Int
+    ): Response<GenericResponse>
+
+    @POST(NetworkConfig.Endpoints.ACCEPT_REQUEST)
+    suspend fun acceptFriendRequest(
+        @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String,
+        @Path("friendId") friendId: Int
+    ): Response<GenericResponse>
+
+    @POST(NetworkConfig.Endpoints.REJECT_REQUEST)
+    suspend fun rejectFriendRequest(
+        @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String,
+        @Path("friendId") friendId: Int
+    ): Response<GenericResponse>
+}

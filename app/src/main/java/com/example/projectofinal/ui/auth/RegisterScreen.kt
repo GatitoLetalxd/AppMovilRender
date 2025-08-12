@@ -24,7 +24,7 @@ import com.example.projectofinal.data.model.UserDetails
 import com.example.projectofinal.data.model.UserProfileData
 import com.example.projectofinal.data.model.UserProfileUpdateRequest
 import com.example.projectofinal.data.network.ApiService
-import com.example.projectofinal.data.network.UserProfile
+import com.example.projectofinal.data.model.UserProfile
 import com.example.projectofinal.data.repository.AuthRepository
 import com.example.projectofinal.ui.theme.ProjectoFinalDetailedTheme
 import com.example.projectofinal.ui.uistate.AuthUiState
@@ -213,15 +213,14 @@ fun RegisterScreenPreview() {
         }
 
         override suspend fun registerUser(registerRequest: RegisterRequest): retrofit2.Response<AuthResponse> {
-            // Asumiendo que tu RegisterRequest tiene un campo llamado 'correo_electronico'
-            // Si se llama 'correo', usa registerRequest.correo
-            println("FakeApiServicePreview: Registering user ${registerRequest.correo}")
+                // Para preview, usamos el campo 'correo'
+                println("FakeApiServicePreview: Registering user ${registerRequest.correo}")
 
             // Simula una respuesta exitosa para el preview
             val fakeUserDetails = UserDetails( // <-- USERDETAILS FALSO
                 id = 12345,
                 nombre = "Preview User",
-                correo = registerRequest.correo, // Usar el campo correcto de RegisterRequest
+                 correo = registerRequest.correo, // Usar el campo correcto de RegisterRequest
                 rol = "usuario"
                 // No fotoPerfilUrl aquí, ¡correcto!
             )
@@ -258,7 +257,7 @@ fun RegisterScreenPreview() {
             val updatedProfile = UserProfileData(
                 id = profileData.id?: 123,
                 nombre = profileData.nombre ?: "Updated Name",
-                correo = profileData.correo ?: "updated.profile@example.com",
+                correo = profileData.email ?: "updated.profile@example.com",
                 rol = "usuario",
                 fotoPerfilUrl = "/uploads/updated.jpg",
                 fechaRegistro = "2023-01-01T00:00:00.000Z"

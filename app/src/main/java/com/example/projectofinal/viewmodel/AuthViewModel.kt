@@ -1,210 +1,236 @@
 package com.example.projectofinal.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.projectofinal.data.datastore.UserPreferencesRepository
+import com.example.projectofinal.data.model.Friend
+import com.example.projectofinal.data.model.FriendRequest
 import com.example.projectofinal.data.model.LoginRequest
 import com.example.projectofinal.data.model.RegisterRequest
+import com.example.projectofinal.data.model.UserProfile
+import com.example.projectofinal.data.model.UserProfileData
+import com.example.projectofinal.data.model.UserSearchResult
 import com.example.projectofinal.data.repository.AuthRepository
+import com.example.projectofinal.data.model.UserProfileUpdateRequest
 import com.example.projectofinal.ui.uistate.AuthUiState
-import com.example.projectofinal.utils.AppConstants
-import com.example.projectofinal.utils.Logger
-import com.example.projectofinal.utils.ValidationUtils
-import kotlinx.coroutines.flow.Flow
+import com.example.projectofinal.ui.uistate.FriendRequestsUiState
+import com.example.projectofinal.ui.uistate.FriendsUiState
+import com.example.projectofinal.ui.uistate.ProfileUiState
+import com.example.projectofinal.ui.uistate.SearchUiState
+import okhttp3.MultipartBody
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
-import java.io.IOException
 
 class AuthViewModel(
     private val authRepository: AuthRepository,
     private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
-    companion object {
-        private const val TAG = "AuthViewModel"
-    }
-
-    private val _loginUiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
-    val loginUiState: StateFlow<AuthUiState> = _loginUiState.asStateFlow()
+    val authTokenStream = userPreferencesRepository.authToken
+    val currentDisplayName = userPreferencesRepository.displayName
 
     private val _registerUiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val registerUiState: StateFlow<AuthUiState> = _registerUiState.asStateFlow()
 
-    val authTokenStream: Flow<String?> = userPreferencesRepository.authToken
+    private val _loginUiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
+    val loginUiState: StateFlow<AuthUiState> = _loginUiState.asStateFlow()
 
-    val currentDisplayName: StateFlow<String?> = userPreferencesRepository.displayName
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
-        )
+    private val _profileUiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Idle)
+    val profileUiState: StateFlow<ProfileUiState> = _profileUiState.asStateFlow()
 
-    val currentUserId: StateFlow<String?> = userPreferencesRepository.userId
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
-        )
+    private val _friendsUiState = MutableStateFlow<FriendsUiState>(FriendsUiState.Loading)
+    val friendsUiState: StateFlow<FriendsUiState> = _friendsUiState.asStateFlow()
 
-    val currentUserEmail: StateFlow<String?> = userPreferencesRepository.userEmail
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
-        )
+    private val _friendRequestsUiState = MutableStateFlow<FriendRequestsUiState>(FriendRequestsUiState.Loading)
+    val friendRequestsUiState: StateFlow<FriendRequestsUiState> = _friendRequestsUiState.asStateFlow()
 
-    // Función de validación de entrada usando utilidades centralizadas
-    fun validateInputs(email: String, password: String): ValidationResult {
-        val emailError = ValidationUtils.getEmailErrorMessage(email)
-        val passwordError = ValidationUtils.getPasswordErrorMessage(password)
-        
-        return when {
-            emailError != null -> ValidationResult.Error(emailError)
-            passwordError != null -> ValidationResult.Error(passwordError)
-            else -> ValidationResult.Success
-        }
-    }
+    private val _searchUiState = MutableStateFlow<SearchUiState>(SearchUiState.Idle)
+    val searchUiState: StateFlow<SearchUiState> = _searchUiState.asStateFlow()
 
-    fun loginUser(emailInput: String, passwordInput: String) {
-        Logger.logUserAction(TAG, "Login initiated", emailInput)
-        
-        // Validar entrada antes de proceder
-        val validation = validateInputs(emailInput, passwordInput)
-        if (validation is ValidationResult.Error) {
-            _loginUiState.value = AuthUiState.Error(validation.message)
-            return
-        }
-
-        viewModelScope.launch {
-            _loginUiState.value = AuthUiState.Loading
-            try {
-                val loginRequest = LoginRequest(emailInput, passwordInput)
-                Logger.logNetworkCall(TAG, "auth/login", "POST")
-                
-                val response = authRepository.loginUser(loginRequest)
-
-                if (response.isSuccessful && response.body() != null) {
-                    val authResponse = response.body()!!
-                    Logger.logNetworkSuccess(TAG, "auth/login", response.code())
-
-                    val token = authResponse.token
-                    val userId = authResponse.user?.id?.toString()
-                    val displayNameFromBackend = authResponse.user?.nombre
-                    val emailFromBackend = authResponse.user?.correo
-
-                    if (token != null && userId != null && displayNameFromBackend != null) {
-                        Logger.logDataOperation(TAG, "Save auth details", "user credentials", true)
-                        userPreferencesRepository.saveAuthDetails(
-                            token = token,
-                            userId = userId,
-                            displayName = displayNameFromBackend,
-                            email = emailFromBackend
-                        )
-                        _loginUiState.value = AuthUiState.Success(authResponse)
-                        Logger.logUserAction(TAG, "Login completed", userId)
-                    } else {
-                        val errorMsg = AppConstants.ErrorMessages.INCOMPLETE_RESPONSE
-                        Logger.w(TAG, errorMsg)
-                        _loginUiState.value = AuthUiState.Error(errorMsg)
-                    }
-                } else {
-                    val errorMsg = response.errorBody()?.string() ?: AppConstants.ErrorMessages.UNKNOWN_ERROR
-                    Logger.logNetworkError(TAG, "auth/login", errorMsg)
-                    _loginUiState.value = AuthUiState.Error(errorMsg)
-                }
-            } catch (e: IOException) {
-                val errorMsg = AppConstants.ErrorMessages.NETWORK_ERROR
-                Logger.logNetworkError(TAG, "auth/login", errorMsg, e)
-                _loginUiState.value = AuthUiState.Error(errorMsg)
-            } catch (e: Exception) {
-                val errorMsg = e.message ?: AppConstants.ErrorMessages.UNKNOWN_ERROR
-                Logger.e(TAG, "Unexpected error in login: $errorMsg", e)
-                _loginUiState.value = AuthUiState.Error(errorMsg)
-            }
-        }
-    }
-
-    fun registerUser(usernameInput: String, emailInput: String, passwordInput: String) {
-        Logger.logUserAction(TAG, "Register initiated", emailInput)
-        
-        // Validar entrada antes de proceder
-        val validation = validateInputs(emailInput, passwordInput)
-        if (validation is ValidationResult.Error) {
-            _registerUiState.value = AuthUiState.Error(validation.message)
-            return
-        }
-        
-        val usernameError = ValidationUtils.getUsernameErrorMessage(usernameInput)
-        if (usernameError != null) {
-            _registerUiState.value = AuthUiState.Error(usernameError)
-            return
-        }
-
+    fun registerUser(request: RegisterRequest) {
         viewModelScope.launch {
             _registerUiState.value = AuthUiState.Loading
             try {
-                val registerRequest = RegisterRequest(usernameInput, emailInput, passwordInput)
-                Logger.logNetworkCall(TAG, "auth/register", "POST")
-                
-                val response = authRepository.registerUser(registerRequest)
-
+                val response = authRepository.registerUser(request)
                 if (response.isSuccessful && response.body() != null) {
-                    val authResponse = response.body()!!
-                    Logger.logNetworkSuccess(TAG, "auth/register", response.code())
-
-                    val token = authResponse.token
-                    val userId = authResponse.user?.id?.toString()
-                    val displayNameFromBackend = authResponse.user?.nombre
-                    val emailFromBackend = authResponse.user?.correo
-
-                    if (token != null && userId != null && displayNameFromBackend != null) {
-                        Logger.logDataOperation(TAG, "Save auth details", "user credentials", true)
-                        userPreferencesRepository.saveAuthDetails(
-                            token = token,
-                            userId = userId,
-                            displayName = displayNameFromBackend,
-                            email = emailFromBackend
-                        )
-                        _registerUiState.value = AuthUiState.Success(authResponse)
-                        Logger.logUserAction(TAG, "Register completed", userId)
-                    } else {
-                        val errorMsg = AppConstants.ErrorMessages.INCOMPLETE_RESPONSE
-                        Logger.w(TAG, errorMsg)
-                        _registerUiState.value = AuthUiState.Error(errorMsg)
-                    }
+                    _registerUiState.value = AuthUiState.Success(response.body()!!)
                 } else {
-                    val errorMsg = response.errorBody()?.string() ?: AppConstants.ErrorMessages.UNKNOWN_ERROR
-                    Logger.logNetworkError(TAG, "auth/register", errorMsg)
-                    _registerUiState.value = AuthUiState.Error(errorMsg)
+                    val errorBody = response.errorBody()?.string() ?: "Error desconocido"
+                    _registerUiState.value = AuthUiState.Error(errorBody)
                 }
-            } catch (e: IOException) {
-                val errorMsg = AppConstants.ErrorMessages.NETWORK_ERROR
-                Logger.logNetworkError(TAG, "auth/register", errorMsg, e)
-                _registerUiState.value = AuthUiState.Error(errorMsg)
             } catch (e: Exception) {
-                val errorMsg = e.message ?: AppConstants.ErrorMessages.UNKNOWN_ERROR
-                Logger.e(TAG, "Unexpected error in register: $errorMsg", e)
-                _registerUiState.value = AuthUiState.Error(errorMsg)
+                _registerUiState.value = AuthUiState.Error(e.message ?: "Error de conexión")
             }
         }
     }
 
-    fun logoutUser() {
-        Logger.logUserAction(TAG, "Logout initiated")
+    fun loginUser(request: LoginRequest) {
         viewModelScope.launch {
-            userPreferencesRepository.clearAuthCredentials()
-            _loginUiState.value = AuthUiState.Idle
-            _registerUiState.value = AuthUiState.Idle
-            Logger.logUserAction(TAG, "Logout completed")
+            _loginUiState.value = AuthUiState.Loading
+            try {
+                val response = authRepository.loginUser(request)
+                if (response.isSuccessful && response.body() != null) {
+                    val body = response.body()!!
+                    val token = body.token ?: ""
+                    val userId = body.user?.id?.toString() ?: ""
+                    val displayName = body.user?.nombre ?: ""
+                    val email = body.user?.email
+                    if (token.isNotBlank()) {
+                        userPreferencesRepository.saveAuthDetails(
+                            token = token,
+                            userId = userId,
+                            displayName = displayName,
+                            email = email
+                        )
+                    }
+                    _loginUiState.value = AuthUiState.Success(body)
+                } else {
+                    val errorBody = response.errorBody()?.string() ?: "Error desconocido"
+                    _loginUiState.value = AuthUiState.Error(errorBody)
+                }
+            } catch (e: Exception) {
+                _loginUiState.value = AuthUiState.Error(e.message ?: "Error de conexión")
+            }
         }
     }
 
+    fun loginUser(email: String, password: String) {
+        // Backend espera 'correo' y 'contraseña'
+        loginUser(LoginRequest(correo = email, contrasena = password))
+    }
+
+    fun registerUser(nombre: String, correo: String, contraseña: String) {
+        registerUser(RegisterRequest(nombre = nombre, email = correo, password = contraseña))
+    }
+
+    fun fetchUserProfile() {
+        viewModelScope.launch {
+            _profileUiState.value = ProfileUiState.Loading
+            try {
+                val token = userPreferencesRepository.authToken.firstOrNull()
+                if (token.isNullOrBlank()) {
+                    _profileUiState.value = ProfileUiState.Error("Token no disponible")
+                    return@launch
+                }
+                val response = authRepository.getUserProfile("Bearer $token")
+                if (response.isSuccessful && response.body() != null) {
+                    val data: UserProfileData = response.body()!!
+                    val mapped = UserProfile(
+                        id = data.id,
+                        nombre = data.nombre,
+                        correo = data.correo,
+                        rol = data.rol,
+                        fotoPerfilUrl = data.fotoPerfilUrl,
+                        fechaRegistro = data.fechaRegistro
+                    )
+                    _profileUiState.value = ProfileUiState.Success(mapped)
+                } else {
+                    _profileUiState.value = ProfileUiState.Error("Error al cargar el perfil: ${response.message()}")
+                }
+            } catch (e: Exception) {
+                _profileUiState.value = ProfileUiState.Error("Excepción: ${e.message}")
+            }
+        }
+    }
+
+    fun getFriendsList() {
+        viewModelScope.launch {
+            _friendsUiState.value = FriendsUiState.Loading
+            try {
+                val token = userPreferencesRepository.authToken.firstOrNull()
+                if (token.isNullOrBlank()) {
+                    _friendsUiState.value = FriendsUiState.Error("Token no disponible")
+                    return@launch
+                }
+                val response = authRepository.getFriends("Bearer $token")
+                if (response.isSuccessful && response.body() != null) {
+                    _friendsUiState.value = FriendsUiState.Success(response.body()!!)
+                } else {
+                    _friendsUiState.value = FriendsUiState.Error("Error al obtener amigos")
+                }
+            } catch (e: Exception) {
+                _friendsUiState.value = FriendsUiState.Error(e.message ?: "Error desconocido")
+            }
+        }
+    }
+
+    fun getPendingRequests() {
+        viewModelScope.launch {
+            _friendRequestsUiState.value = FriendRequestsUiState.Loading
+            try {
+                val token = userPreferencesRepository.authToken.firstOrNull()
+                if (token.isNullOrBlank()) {
+                    _friendRequestsUiState.value = FriendRequestsUiState.Error("Token no disponible")
+                    return@launch
+                }
+                val response = authRepository.getPendingFriendRequests("Bearer $token")
+                if (response.isSuccessful && response.body() != null) {
+                    _friendRequestsUiState.value = FriendRequestsUiState.Success(response.body()!!)
+                } else {
+                    _friendRequestsUiState.value = FriendRequestsUiState.Error("Error al obtener solicitudes")
+                }
+            } catch (e: Exception) {
+                _friendRequestsUiState.value = FriendRequestsUiState.Error(e.message ?: "Error desconocido")
+            }
+        }
+    }
+
+    fun searchUsers(query: String) {
+        viewModelScope.launch {
+            if (query.isBlank()) {
+                _searchUiState.value = SearchUiState.Idle
+                return@launch
+            }
+            _searchUiState.value = SearchUiState.Loading
+            try {
+                val token = userPreferencesRepository.authToken.firstOrNull()
+                if (token.isNullOrBlank()) {
+                    _searchUiState.value = SearchUiState.Error("Token no disponible")
+                    return@launch
+                }
+                val response = authRepository.searchUsers("Bearer $token", query)
+                if (response.isSuccessful && response.body() != null) {
+                    _searchUiState.value = SearchUiState.Success(response.body()!!)
+                } else {
+                    _searchUiState.value = SearchUiState.Error("Error en la búsqueda")
+                }
+            } catch (e: Exception) {
+                _searchUiState.value = SearchUiState.Error(e.message ?: "Error desconocido")
+            }
+        }
+    }
+
+    fun sendFriendRequest(userId: Int) {
+        viewModelScope.launch {
+            try {
+                val token = userPreferencesRepository.authToken.firstOrNull() ?: return@launch
+                authRepository.sendFriendRequest("Bearer $token", userId)
+            } catch (e: Exception) {
+                // Manejar error
+            }
+        }
+    }
+
+    fun respondToFriendRequest(requestId: Int, accepted: Boolean) {
+        viewModelScope.launch {
+            try {
+                val token = userPreferencesRepository.authToken.firstOrNull() ?: return@launch
+                if (accepted) {
+                    authRepository.acceptFriendRequest("Bearer $token", requestId)
+                } else {
+                    authRepository.rejectFriendRequest("Bearer $token", requestId)
+                }
+                getPendingRequests()
+                if(accepted) getFriendsList()
+            } catch (e: Exception) {
+                // Manejar error
+            }
+        }
+    }
+    
     fun resetLoginState() {
         _loginUiState.value = AuthUiState.Idle
     }
@@ -212,10 +238,67 @@ class AuthViewModel(
     fun resetRegisterState() {
         _registerUiState.value = AuthUiState.Idle
     }
-}
 
-// Clase para manejar resultados de validación
-sealed class ValidationResult {
-    object Success : ValidationResult()
-    data class Error(val message: String) : ValidationResult()
+    fun logoutUser() {
+        viewModelScope.launch {
+            userPreferencesRepository.clearAuthCredentials()
+        }
+    }
+
+    private fun mapProfileDataToDomain(data: UserProfileData): UserProfile =
+        UserProfile(
+            id = data.id,
+            nombre = data.nombre,
+            correo = data.correo,
+            rol = data.rol,
+            fotoPerfilUrl = data.fotoPerfilUrl,
+            fechaRegistro = data.fechaRegistro
+        )
+
+    fun updateUserProfile(nombre: String, correo: String) {
+        viewModelScope.launch {
+            _profileUiState.value = ProfileUiState.Loading
+            try {
+                val token = userPreferencesRepository.authToken.firstOrNull()
+                if (token.isNullOrBlank()) {
+                    _profileUiState.value = ProfileUiState.Error("Token no disponible")
+                    return@launch
+                }
+                val response = authRepository.updateUserProfile(
+                    token = "Bearer $token",
+                    profileData = UserProfileUpdateRequest(nombre = nombre, correo = correo)
+                )
+                if (response.isSuccessful && response.body() != null) {
+                    // Backend solo retorna message; refrescamos el perfil
+                    fetchUserProfile()
+                } else {
+                    _profileUiState.value = ProfileUiState.Error(response.errorBody()?.string() ?: "Error al actualizar perfil")
+                }
+            } catch (e: Exception) {
+                _profileUiState.value = ProfileUiState.Error(e.message ?: "Error desconocido")
+            }
+        }
+    }
+
+    fun uploadProfilePhoto(photo: MultipartBody.Part) {
+        viewModelScope.launch {
+            _profileUiState.value = ProfileUiState.Loading
+            try {
+                val token = userPreferencesRepository.authToken.firstOrNull()
+                if (token.isNullOrBlank()) {
+                    _profileUiState.value = ProfileUiState.Error("Token no disponible")
+                    return@launch
+                }
+                val response = authRepository.uploadProfilePhoto("Bearer $token", photo)
+                if (response.isSuccessful) {
+                    // Tras subir, refrescar perfil para obtener nueva URL
+                    fetchUserProfile()
+                } else {
+                    _profileUiState.value = ProfileUiState.Error(response.errorBody()?.string() ?: "Error al subir foto")
+                }
+            } catch (e: Exception) {
+                _profileUiState.value = ProfileUiState.Error(e.message ?: "Error desconocido")
+            }
+        }
+    }
 }

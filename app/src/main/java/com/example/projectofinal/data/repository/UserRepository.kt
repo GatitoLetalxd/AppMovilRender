@@ -41,11 +41,10 @@ class UserRepository(
             return Result.failure(NotAuthenticatedException("User not authenticated or token is missing."))
         }
         return try {
-            // Asumimos que apiService.updateUserProfile() ahora devuelve Response<UserProfileData>
-            // Si devuelve otra cosa (ej. GenericResponse), ajusta esto.
+            // updateUserProfile devuelve { message, user: UserProfileData }
             val response = apiService.updateUserProfile("Bearer $token", profileData)
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+                Result.success(response.body()!!.user)
             } else {
                 val errorBody = response.errorBody()?.string() ?: "Unknown error updating profile"
                 Result.failure(ApiException("Error ${response.code()}: $errorBody"))
