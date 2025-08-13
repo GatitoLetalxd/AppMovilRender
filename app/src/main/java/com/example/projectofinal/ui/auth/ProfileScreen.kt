@@ -318,7 +318,8 @@ fun UserInfoSection(userProfile: UserProfile, onLogout: () -> Unit) {
 @Composable
 fun AdminSection(userProfile: UserProfile, authViewModel: AuthViewModel) {
     val role = userProfile.rol?.lowercase() ?: "usuario"
-    val isAdmin = role == "admin" || role == "superadmin" || role == "superadministrador" || role == "super-admin"
+    val isAdmin =
+        role == "admin" || role == "superadmin" || role == "superadministrador" || role == "super-admin"
     val isSuperAdmin = role == "superadmin" || role == "superadministrador" || role == "super-admin"
 
     Spacer(modifier = Modifier.height(16.dp))
@@ -341,8 +342,10 @@ fun AdminSection(userProfile: UserProfile, authViewModel: AuthViewModel) {
                 ) { Text("Solicitar") }
             }
         }
+
         isAdmin -> {
             var selected by remember { mutableStateOf("none") }
+            var filterAdminsOnly by remember { mutableStateOf(false) }
             Text("Panel de Administración", style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
             // Aquí podríamos mostrar solicitudes de admin y listado de usuarios
@@ -359,20 +362,61 @@ fun AdminSection(userProfile: UserProfile, authViewModel: AuthViewModel) {
             }
             if (isSuperAdmin) {
                 Spacer(Modifier.height(8.dp))
-                Text("Gestión de administradores (Superadmin)", style = MaterialTheme.typography.bodyMedium)
-            }
+                Text(
+                    "Gestión de administradores (Superadmin)",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                if (selected != "none") {
+                    Spacer(Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { selected = "none" }) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_ocultar),
+                                    contentDescription = "Ocultar",
+                                    modifier = Modifier.fillMaxSize(),      // ocupa todo el fondo
+                                    contentScale = ContentScale.Crop        // o ContentScale.Fit según el PNG
+                                )
+                            }
+                        }
+                    }
+                }
 
-			Spacer(Modifier.height(12.dp))
-            // Secciones dinámicas según selección
-            when (selected) {
-                "requests" -> AdminRequestsPanel(authViewModel = authViewModel)
-                "users" -> AdminUsersPanel(authViewModel = authViewModel, isSuperAdmin = isSuperAdmin)
-                else -> {}
+                Spacer(Modifier.height(12.dp))
+                // Secciones dinámicas según selección
+                when (selected) {
+                    "requests" -> AdminRequestsPanel(authViewModel = authViewModel)
+                    "users" -> {
+                        // Filtro opcional para mostrar solo administradores
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(
+                                checked = filterAdminsOnly,
+                                onCheckedChange = { filterAdminsOnly = it })
+                            Text("Solo administradores")
+                        }
+                        AdminUsersPanel(
+                            authViewModel = authViewModel,
+                            isSuperAdmin = isSuperAdmin,
+                            filterAdminsOnly = filterAdminsOnly
+                        )
+                    }
+
+                    else -> {}
+                }
             }
         }
     }
 }
-
 @Composable
 private fun AdminRequestsPanel(authViewModel: AuthViewModel) {
     val requestsState by authViewModel.adminRequestsUiState.collectAsState()
@@ -423,7 +467,7 @@ private fun AdminRequestsPanel(authViewModel: AuthViewModel) {
 }
 
 @Composable
-private fun AdminUsersPanel(authViewModel: AuthViewModel, isSuperAdmin: Boolean) {
+private fun AdminUsersPanel(authViewModel: AuthViewModel, isSuperAdmin: Boolean, filterAdminsOnly: Boolean) {
     val usersState by authViewModel.adminUsersUiState.collectAsState()
     when (usersState) {
         is com.example.projectofinal.ui.uistate.AdminUsersUiState.Loading -> {
@@ -436,7 +480,8 @@ private fun AdminUsersPanel(authViewModel: AuthViewModel, isSuperAdmin: Boolean)
         is com.example.projectofinal.ui.uistate.AdminUsersUiState.Success -> {
             Text("Usuarios registrados", style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.height(8.dp))
-            val items = (usersState as com.example.projectofinal.ui.uistate.AdminUsersUiState.Success).users
+            val itemsRaw = (usersState as com.example.projectofinal.ui.uistate.AdminUsersUiState.Success).users
+            val items = if (filterAdminsOnly) itemsRaw.filter { it.rol.equals("admin", true) } else itemsRaw
             if (items.isEmpty()) {
                 Text("No hay usuarios")
             } else {
