@@ -44,3 +44,19 @@ sealed class ActionUiState {
     data class Success(val message: String) : ActionUiState()
     data class Error(val message: String) : ActionUiState()
 }
+
+// Solicitudes de admin
+sealed class AdminRequestsUiState {
+    object Idle : AdminRequestsUiState()
+    object Loading : AdminRequestsUiState()
+    data class Success(val requests: List<com.example.projectofinal.data.model.AdminRequest>) : AdminRequestsUiState()
+    data class Error(val message: String) : AdminRequestsUiState()
+}
+
+// Listado de usuarios
+sealed class AdminUsersUiState {
+    object Idle : AdminUsersUiState()
+    object Loading : AdminUsersUiState()
+    data class Success(val users: List<com.example.projectofinal.data.model.UserSummary>) : AdminUsersUiState()
+    data class Error(val message: String) : AdminUsersUiState()
+}

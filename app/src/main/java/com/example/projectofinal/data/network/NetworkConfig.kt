@@ -31,5 +31,12 @@ object NetworkConfig {
         const val SEND_REQUEST = "user/friends/request/{friendId}"
         const val ACCEPT_REQUEST = "user/friends/accept/{friendId}"
         const val REJECT_REQUEST = "user/friends/reject/{friendId}"
+
+        // Administración (según api.md)
+        const val ADMIN_REQUEST = "admin/request" // POST { reason }
+        const val ADMIN_PENDING = "admin/pending" // GET
+        const val ADMIN_HANDLE = "admin/handle" // PUT { requestId, action }
+        const val USERS_LIST = "user/list" // GET (todos los usuarios registrados)
+        const val ADMIN_REMOVE = "admin/remove/{adminId}" // DELETE
     }
 }

@@ -558,9 +558,227 @@
 
 ---
 
+## 👑 Administración y Solicitudes de Admin
+
+### 18. Crear Solicitud de Admin
+**Endpoint**: `POST /api/admin/request`
+
+**Headers**: `Authorization: Bearer <token>`
+
+**Body**:
+```json
+{
+  "reason": "Explicación detallada de por qué necesito permisos de administrador para gestionar usuarios del sistema"
+}
+```
+
+**Respuesta exitosa (201)**:
+```json
+{
+  "message": "Solicitud enviada correctamente"
+}
+```
+
+**Respuestas de error**:
+```json
+// 400 - Razón faltante
+{
+  "message": "La razón de la solicitud es requerida"
+}
+
+// 400 - Ya es admin
+{
+  "message": "Ya tienes privilegios de administrador"
+}
+
+// 400 - Solicitud pendiente
+{
+  "message": "Ya tienes una solicitud pendiente"
+}
+
+// 500 - Error del servidor
+{
+  "message": "Error al procesar la solicitud"
+}
+```
+
+### 19. Ver Solicitudes Pendientes
+**Endpoint**: `GET /api/admin/pending`
+
+**Headers**: `Authorization: Bearer <token>` (Requiere rol Admin)
+
+**Respuesta exitosa (200)**:
+```json
+[
+  {
+    "id_solicitud": 1,
+    "usuario_id": "abc123def456",
+    "razon": "Necesito administrar usuarios del sistema y gestionar contenido",
+    "estado": "pendiente",
+    "fecha_solicitud": "2024-01-15T10:30:00.000Z",
+    "nombre": "Juan Pérez",
+    "correo": "juan@example.com"
+  },
+  {
+    "id_solicitud": 2,
+    "usuario_id": "xyz789uvw012",
+    "razon": "Quiero ayudar a moderar la plataforma y gestionar solicitudes",
+    "estado": "pendiente",
+    "fecha_solicitud": "2024-01-15T09:15:00.000Z",
+    "nombre": "María García",
+    "correo": "maria@example.com"
+  }
+]
+```
+
+**Respuestas de error**:
+```json
+// 401 - No autenticado
+{
+  "message": "Token inválido"
+}
+
+// 403 - Sin permisos de admin
+{
+  "message": "Acceso denegado"
+}
+
+// 500 - Error del servidor
+{
+  "message": "Error al obtener las solicitudes"
+}
+```
+
+### 20. Manejar Solicitud (Aprobar/Rechazar)
+**Endpoint**: `PUT /api/admin/handle`
+
+**Headers**: `Authorization: Bearer <token>` (Requiere rol Admin)
+
+**Body**:
+```json
+{
+  "requestId": 1,
+  "action": "aprobada"
+}
+```
+
+**Opciones para `action`:**
+- `"aprobada"` - Acepta la solicitud y convierte al usuario en admin
+- `"rechazada"` - Rechaza la solicitud
+
+**Respuesta exitosa (200)**:
+```json
+{
+  "message": "Solicitud aprobada correctamente"
+}
+```
+
+**Respuestas de error**:
+```json
+// 400 - Datos inválidos
+{
+  "message": "Datos de solicitud inválidos"
+}
+
+// 401 - No autenticado
+{
+  "message": "Token inválido"
+}
+
+// 403 - Sin permisos de admin
+{
+  "message": "Acceso denegado"
+}
+
+// 500 - Error del servidor
+{
+  "message": "Error al procesar la solicitud"
+}
+```
+
+### 21. Listar Todos los Administradores
+**Endpoint**: `GET /api/admin/list`
+
+**Headers**: `Authorization: Bearer <token>` (Requiere rol Admin)
+
+**Respuesta exitosa (200)**:
+```json
+[
+  {
+    "id_usuario": "abc123def456",
+    "nombre": "Juan Pérez",
+    "correo": "juan@example.com",
+    "fecha_registro": "2024-01-10T08:00:00.000Z"
+  },
+  {
+    "id_usuario": "xyz789uvw012",
+    "nombre": "María García",
+    "correo": "maria@example.com",
+    "fecha_registro": "2024-01-08T14:30:00.000Z"
+  }
+]
+```
+
+**Respuestas de error**:
+```json
+// 401 - No autenticado
+{
+  "message": "Token inválido"
+}
+
+// 403 - Sin permisos de admin
+{
+  "message": "Acceso denegado"
+}
+
+// 500 - Error del servidor
+{
+  "message": "Error al obtener la lista de administradores"
+}
+```
+
+### 22. Remover Administrador (Solo SuperAdmin)
+**Endpoint**: `DELETE /api/admin/remove/:adminId`
+
+**Headers**: `Authorization: Bearer <token>` (Requiere rol SuperAdmin)
+
+**Parámetros**: `adminId` - ID del usuario a remover
+
+**Respuesta exitosa (200)**:
+```json
+{
+  "message": "Administrador removido correctamente"
+}
+```
+
+**Respuestas de error**:
+```json
+// 401 - No autenticado
+{
+  "message": "Token inválido"
+}
+
+// 403 - Sin permisos de superadmin
+{
+  "message": "Acceso denegado"
+}
+
+// 403 - Protección del superadmin
+{
+  "message": "No se puede remover al superadministrador"
+}
+
+// 500 - Error del servidor
+{
+  "message": "Error al remover el administrador"
+}
+```
+
+---
+
 ## 🧪 Endpoints de Prueba
 
-### 18. Test de API
+### 23. Test de API
 **Endpoint**: `GET /api/test`
 
 **Respuesta exitosa (200)**:
@@ -614,6 +832,57 @@ Content-Type: multipart/form-data
    - Imágenes: 10MB máximo
 6. **Formatos soportados**: jpeg, jpg, png
 7. **Autenticación**: Todos los endpoints excepto `/api/test` requieren token JWT
+8. **Roles de usuario**: `usuario`, `admin`, `superadmin`
+9. **Estados de solicitud admin**: `pendiente`, `aprobada`, `rechazada`
+
+---
+
+## 🗄️ Estructura de Base de Datos
+
+### Tabla `SolicitudAdmin`
+```sql
+CREATE TABLE SolicitudAdmin (
+  id_solicitud INT PRIMARY KEY AUTO_INCREMENT,
+  usuario_id VARCHAR(255) NOT NULL,
+  razon TEXT NOT NULL,
+  estado ENUM('pendiente', 'aprobada', 'rechazada') DEFAULT 'pendiente',
+  fecha_solicitud TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  admin_id VARCHAR(255) NULL,
+  fecha_respuesta TIMESTAMP NULL,
+  FOREIGN KEY (usuario_id) REFERENCES Usuario(id_usuario),
+  FOREIGN KEY (admin_id) REFERENCES Usuario(id_usuario)
+);
+```
+
+### Tabla `Usuario` (Campos relacionados con admin)
+```sql
+CREATE TABLE Usuario (
+  id_usuario VARCHAR(255) PRIMARY KEY,
+  nombre VARCHAR(255) NOT NULL,
+  correo VARCHAR(255) UNIQUE NOT NULL,
+  contraseña VARCHAR(255) NOT NULL,
+  rol ENUM('usuario', 'admin', 'superadmin') DEFAULT 'usuario',
+  fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  reset_token VARCHAR(255) NULL,
+  reset_token_expires TIMESTAMP NULL
+);
+```
+
+---
+
+## 🔐 Permisos por Rol
+
+| Endpoint | Usuario | Admin | SuperAdmin |
+|----------|---------|-------|------------|
+| `/api/auth/*` | ✅ | ✅ | ✅ |
+| `/api/user/*` | ✅ | ✅ | ✅ |
+| `/api/friends/*` | ✅ | ✅ | ✅ |
+| `/api/images/*` | ✅ | ✅ | ✅ |
+| `/api/admin/request` | ✅ | ❌ | ❌ |
+| `/api/admin/pending` | ❌ | ✅ | ✅ |
+| `/api/admin/handle` | ❌ | ✅ | ✅ |
+| `/api/admin/list` | ❌ | ✅ | ✅ |
+| `/api/admin/remove/:id` | ❌ | ❌ | ✅ |
 
 ---
 
@@ -653,4 +922,31 @@ curl -X GET http://100.73.162.98:5000/api/user/friends/pending \
 # 4. Aceptar solicitud
 curl -X POST http://100.73.162.98:5000/api/user/friends/accept/123 \
   -H "Authorization: Bearer <token_usuario_124>"
+```
+
+### Flujo completo de solicitud de admin:
+```bash
+# 1. Usuario solicita rol de admin
+curl -X POST http://100.73.162.98:5000/api/admin/request \
+  -H "Authorization: Bearer <token_usuario>" \
+  -H "Content-Type: application/json" \
+  -d '{"reason":"Necesito permisos de administrador para gestionar usuarios y contenido del sistema"}'
+
+# 2. Admin ve solicitudes pendientes
+curl -X GET http://100.73.162.98:5000/api/admin/pending \
+  -H "Authorization: Bearer <token_admin>"
+
+# 3. Admin aprueba la solicitud
+curl -X PUT http://100.73.162.98:5000/api/admin/handle \
+  -H "Authorization: Bearer <token_admin>" \
+  -H "Content-Type: application/json" \
+  -d '{"requestId":1,"action":"aprobada"}'
+
+# 4. SuperAdmin lista todos los admins
+curl -X GET http://100.73.162.98:5000/api/admin/list \
+  -H "Authorization: Bearer <token_superadmin>"
+
+# 5. SuperAdmin remueve un admin (opcional)
+curl -X DELETE http://100.73.162.98:5000/api/admin/remove/abc123def456 \
+  -H "Authorization: Bearer <token_superadmin>"
 ```

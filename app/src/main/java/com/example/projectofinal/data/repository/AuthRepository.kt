@@ -53,4 +53,26 @@ class AuthRepository(private val apiService: ApiService) {
     suspend fun rejectFriendRequest(token: String, friendId: Int): Response<GenericResponse> {
         return apiService.rejectFriendRequest(token, friendId)
     }
+
+    // --- Administración de roles ---
+    suspend fun requestAdminRole(token: String, motivo: String): Response<GenericResponse> {
+        return apiService.requestAdminRole(token, mapOf("reason" to motivo))
+    }
+
+    suspend fun getAdminRequests(token: String): Response<List<AdminRequest>> {
+        return apiService.getAdminRequests(token)
+    }
+
+    suspend fun decideAdminRequest(token: String, requestId: Int, accept: Boolean): Response<GenericResponse> {
+        val action = if (accept) "aprobada" else "rechazada"
+        return apiService.decideAdminRequest(token, AdminHandleRequest(requestId = requestId, action = action))
+    }
+
+    suspend fun getAllUsers(token: String): Response<List<UserSummary>> {
+        return apiService.getAllUsers(token)
+    }
+
+    suspend fun demoteAdmin(token: String, userId: Int): Response<GenericResponse> {
+        return apiService.demoteAdmin(token, userId.toString())
+    }
 }

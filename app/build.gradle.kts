@@ -8,6 +8,22 @@ android {
     namespace = "com.example.projectofinal"
     compileSdk = 36
 
+    applicationVariants.all {
+        val variant = this
+        outputs.all {
+            val output = this
+            val project = "Render-TGM" // Puedes cambiar esto o hacerlo dinámico
+            val SEP = "_"
+            val buildType = variant.buildType.name
+            val version = variant.versionName
+
+            // Ejemplo de nombre: Render-TGM_release_1.0.apk
+            // o Render-TGM_debug_1.0.apk
+            val newApkName = "$project$SEP$buildType$SEP$version.apk"
+
+            (output as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName = newApkName
+        }
+    }
     defaultConfig {
         applicationId = "com.example.projectofinal"
         minSdk = 24

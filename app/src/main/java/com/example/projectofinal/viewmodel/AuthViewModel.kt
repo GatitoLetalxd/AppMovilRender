@@ -17,7 +17,10 @@ import com.example.projectofinal.ui.uistate.FriendRequestsUiState
 import com.example.projectofinal.ui.uistate.FriendsUiState
 import com.example.projectofinal.ui.uistate.ProfileUiState
 import com.example.projectofinal.ui.uistate.SearchUiState
+import com.example.projectofinal.ui.uistate.AdminRequestsUiState
+import com.example.projectofinal.ui.uistate.AdminUsersUiState
 import okhttp3.MultipartBody
+import com.example.projectofinal.utils.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -49,6 +52,13 @@ class AuthViewModel(
 
     private val _searchUiState = MutableStateFlow<SearchUiState>(SearchUiState.Idle)
     val searchUiState: StateFlow<SearchUiState> = _searchUiState.asStateFlow()
+
+    // Admin
+    private val _adminRequestsUiState = MutableStateFlow<AdminRequestsUiState>(AdminRequestsUiState.Idle)
+    val adminRequestsUiState: StateFlow<AdminRequestsUiState> = _adminRequestsUiState.asStateFlow()
+
+    private val _adminUsersUiState = MutableStateFlow<AdminUsersUiState>(AdminUsersUiState.Idle)
+    val adminUsersUiState: StateFlow<AdminUsersUiState> = _adminUsersUiState.asStateFlow()
 
     fun registerUser(request: RegisterRequest) {
         viewModelScope.launch {
@@ -299,6 +309,83 @@ class AuthViewModel(
             } catch (e: Exception) {
                 _profileUiState.value = ProfileUiState.Error(e.message ?: "Error desconocido")
             }
+        }
+    }
+
+    // --- Admin Actions ---
+    fun requestAdminRole(motivo: String) {
+        viewModelScope.launch {
+            try {
+                val token = userPreferencesRepository.authToken.firstOrNull() ?: return@launch
+                authRepository.requestAdminRole("Bearer $token", motivo)
+            } catch (_: Exception) {}
+        }
+    }
+
+    fun loadAdminRequests() {
+        viewModelScope.launch {
+            _adminRequestsUiState.value = AdminRequestsUiState.Loading
+            try {
+                val token = userPreferencesRepository.authToken.firstOrNull()
+                if (token.isNullOrBlank()) {
+                    _adminRequestsUiState.value = AdminRequestsUiState.Error("Token no disponible")
+                    return@launch
+                }
+                val response = authRepository.getAdminRequests("Bearer $token")
+                if (response.isSuccessful && response.body() != null) {
+                    _adminRequestsUiState.value = AdminRequestsUiState.Success(response.body()!!)
+                } else {
+                    _adminRequestsUiState.value = AdminRequestsUiState.Error("Error al cargar solicitudes")
+                }
+            } catch (e: Exception) {
+                _adminRequestsUiState.value = AdminRequestsUiState.Error(e.message ?: "Error desconocido")
+            }
+        }
+    }
+
+    fun decideAdminRequest(requestId: Int, accept: Boolean) {
+        viewModelScope.launch {
+            try {
+                val token = userPreferencesRepository.authToken.firstOrNull() ?: return@launch
+                Logger.d("Admin", "decideAdminRequest requestId=$requestId accept=$accept")
+                val resp = authRepository.decideAdminRequest("Bearer $token", requestId, accept)
+                Logger.d("Admin", "decideAdminRequest resp=${resp.code()} body=${resp.body()?.message}")
+                loadAdminRequests()
+                loadAllUsers()
+            } catch (e: Exception) {
+                Logger.e("Admin", "decideAdminRequest error: ${e.message}", e)
+            }
+        }
+    }
+
+    fun loadAllUsers() {
+        viewModelScope.launch {
+            _adminUsersUiState.value = AdminUsersUiState.Loading
+            try {
+                val token = userPreferencesRepository.authToken.firstOrNull()
+                if (token.isNullOrBlank()) {
+                    _adminUsersUiState.value = AdminUsersUiState.Error("Token no disponible")
+                    return@launch
+                }
+                val response = authRepository.getAllUsers("Bearer $token")
+                if (response.isSuccessful && response.body() != null) {
+                    _adminUsersUiState.value = AdminUsersUiState.Success(response.body()!!)
+                } else {
+                    _adminUsersUiState.value = AdminUsersUiState.Error("Error al cargar usuarios")
+                }
+            } catch (e: Exception) {
+                _adminUsersUiState.value = AdminUsersUiState.Error(e.message ?: "Error desconocido")
+            }
+        }
+    }
+
+    fun demoteAdmin(userId: Int) {
+        viewModelScope.launch {
+            try {
+                val token = userPreferencesRepository.authToken.firstOrNull() ?: return@launch
+                authRepository.demoteAdmin("Bearer $token", userId)
+                loadAllUsers()
+            } catch (_: Exception) {}
         }
     }
 }

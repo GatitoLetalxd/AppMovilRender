@@ -71,4 +71,33 @@ interface ApiService {
         @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String,
         @Path("friendId") friendId: Int
     ): Response<GenericResponse>
+
+    // --- Administración de roles ---
+    @POST(NetworkConfig.Endpoints.ADMIN_REQUEST)
+    suspend fun requestAdminRole(
+        @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String,
+        @Body body: Map<String, String> // { reason }
+    ): Response<GenericResponse>
+
+    @GET(NetworkConfig.Endpoints.ADMIN_PENDING)
+    suspend fun getAdminRequests(
+        @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String
+    ): Response<List<AdminRequest>>
+
+    @PUT(NetworkConfig.Endpoints.ADMIN_HANDLE)
+    suspend fun decideAdminRequest(
+        @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String,
+        @Body body: AdminHandleRequest
+    ): Response<GenericResponse>
+
+    @GET(NetworkConfig.Endpoints.USERS_LIST)
+    suspend fun getAllUsers(
+        @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String
+    ): Response<List<UserSummary>>
+
+    @DELETE(NetworkConfig.Endpoints.ADMIN_REMOVE)
+    suspend fun demoteAdmin(
+        @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String,
+        @Path("adminId") adminId: String
+    ): Response<GenericResponse>
 }
