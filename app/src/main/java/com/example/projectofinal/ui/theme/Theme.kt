@@ -39,16 +39,13 @@ private val AppDarkDetailedColorScheme = darkColorScheme(
     surfaceVariant = DarkSurfacePaper.copy(alpha = 0.7f), // Un 'paper' ligeramente más transparente o diferente
     onSurfaceVariant = DarkOnSurface,
 
-    outline = DarkSecondary.copy(alpha = 0.5f) // Borde con el secundario y algo de alfa
+    outline = DarkSecondary.copy(alpha = 0.5f)
 )
-
-// Podrías tener un LightColorScheme también si lo necesitas
-// private val AppLightDetailedColorScheme = lightColorScheme(...)
 
 @Composable
 fun ProjectoFinalDetailedTheme(
-    darkTheme: Boolean = true, // Forzamos el tema oscuro por ahora, como en tu ejemplo
-    dynamicColor: Boolean = false, // Dinamic color de Android 12+ (opcional)
+    darkTheme: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) {

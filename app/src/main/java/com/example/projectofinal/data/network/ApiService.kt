@@ -100,4 +100,35 @@ interface ApiService {
         @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String,
         @Path("adminId") adminId: String
     ): Response<GenericResponse>
+
+    // --- Gestión de Imágenes ---
+    @Multipart
+    @POST(NetworkConfig.Endpoints.UPLOAD_IMAGE)
+    suspend fun uploadImage(
+        @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String,
+        @Part image: MultipartBody.Part
+    ): Response<ImageUploadResponse>
+
+    @GET(NetworkConfig.Endpoints.GET_USER_IMAGES)
+    suspend fun getUserImages(
+        @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String
+    ): Response<List<UserImage>>
+
+    @POST(NetworkConfig.Endpoints.PROCESS_IMAGE)
+    suspend fun processImage(
+        @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String,
+        @Path("imageId") imageId: Int
+    ): Response<ProcessImageResponse>
+
+    @GET(NetworkConfig.Endpoints.DOWNLOAD_IMAGE)
+    suspend fun downloadProcessedImage(
+        @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String,
+        @Path("imageId") imageId: Int
+    ): Response<okhttp3.ResponseBody>
+
+    @DELETE(NetworkConfig.Endpoints.DELETE_IMAGE)
+    suspend fun deleteImage(
+        @Header(NetworkConfig.AUTHORIZATION_HEADER) token: String,
+        @Path("imageId") imageId: Int
+    ): Response<GenericImageResponse>
 }

@@ -9,7 +9,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme // Para acceder a colorScheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -19,7 +18,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-// import androidx.compose.ui.graphics.Shape // Calificador redundante eliminado
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -29,13 +27,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.projectofinal.R // Importa tu clase R
+import com.example.projectofinal.R
 import com.example.projectofinal.ui.theme.AppBrushes
 import com.example.projectofinal.ui.theme.GradientButton
 import com.example.projectofinal.ui.theme.ProjectoFinalDetailedTheme
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-// HorizontalPagerIndicator no está disponible en la nueva API, usaremos uno personalizado
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -50,9 +47,6 @@ fun HomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
-        // Ya no necesitas padding-bottom aquí si la última sección maneja su propio padding.
-        // O puedes mantenerlo si lo prefieres.
-        // .padding(bottom = 16.dp)
     ) {
         // --- NUEVA SECCIÓN DE HÉROE ---
         HeroSectionWithCarouselBackground(
@@ -64,7 +58,6 @@ fun HomeScreen(
                 R.drawable.imagen3
             )
         )
-        // Ya no necesitas HeaderSection(), Spacer, ActionButtons(), Spacer, ni el primer ImageCarousel() aquí.
 
         Spacer(modifier = Modifier.height(32.dp)) // Espacio después de la sección del héroe
 
@@ -79,7 +72,7 @@ fun HomeScreen(
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(16.dp))
-        ImageCarousel( // Este es tu segundo carrusel, se mantiene igual
+        ImageCarousel(
             title = null,
             imageList = listOf(
                 R.drawable.imagen4,
@@ -127,7 +120,7 @@ fun HeroSectionWithCarouselBackground(
             .fillMaxWidth()
             // Define una altura fija para esta sección de \"héroe\".
             // Esta altura debe ser suficiente para mostrar bien las imágenes y el contenido.
-            .height(400.dp) // --- AJUSTA ESTA ALTURA ---
+            .height(400.dp)
     ) {
         // CAPA 1: Carrusel de Imágenes de Fondo
         HorizontalPager(
@@ -172,19 +165,15 @@ fun HeroSectionWithCarouselBackground(
                 text = "Transformamos tus imágenes con inteligencia artificial",
                 style = MaterialTheme.typography.titleMedium,
                 textAlign = TextAlign.Center,
-                color = Color.White.copy(alpha = 0.85f), // --- CAMBIO DE COLOR ---
+                color = Color.White.copy(alpha = 0.85f), //
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
 
             Spacer(modifier = Modifier.height(32.dp)) // Espacio antes de los botones
 
-            // Tus ActionButtons (adaptados si es necesario)
             ActionButtons(
                 onLoginClicked = onLoginClicked,
                 onRegisterClicked = onRegisterClicked,
-                // Puedes pasar modificadores o colores si necesitas ajustar más los botones
-                // Para este ejemplo, asumimos que los colores de texto dentro de ActionButtons
-                // ya fueron ajustados o que los botones tienen un fondo que contrasta.
             )
         }
 
@@ -392,7 +381,7 @@ fun FeatureItem(
 @Composable
 fun FeaturesSection() {
 
-    val itemBackgroundGradient = Brush.linearGradient( // O el tipo de gradiente que quieras
+    val itemBackgroundGradient = Brush.linearGradient(
         colors = listOf(
             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
             MaterialTheme.colorScheme.surface.copy(alpha = 0.3f)
@@ -415,9 +404,6 @@ fun FeaturesSection() {
         verticalArrangement = Arrangement.spacedBy(16.dp) // Espacio entre cada FeatureItem
     ) {
 
-        // val subtleBackgroundBrush = ... // Variable no utilizada eliminada
-
-        // Si tienes un título para la sección...
         Text(
             text = "Características Destacadas",
             style = MaterialTheme.typography.headlineSmall,
@@ -517,7 +503,7 @@ fun ContactSection() {val itemBackgroundGradient = Brush.linearGradient( // O el
     start = Offset(0f, 0f),
     end = Offset(0f, Float.POSITIVE_INFINITY)
 )
-    // También define el glowBrush si lo usas para el borde
+
     val glowBrush = Brush.horizontalGradient(
         colors = listOf(
             MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
@@ -566,28 +552,10 @@ fun ContactSection() {val itemBackgroundGradient = Brush.linearGradient( // O el
     }
 }
 
-// @Composable // Función no utilizada eliminada
-// fun ContactInfoItem(title: String, value: String) {
-// Row(modifier = Modifier.padding(vertical = 4.dp)) {
-// Text(
-// text = "$title: ",
-// style = MaterialTheme.typography.bodyLarge,
-// fontWeight = FontWeight.SemiBold,
-// color = MaterialTheme.colorScheme.onSurface // Asegura contraste
-// )
-// Text(
-// text = value,
-// style = MaterialTheme.typography.bodyLarge,
-// color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.87f) // Contraste
-// )
-// }
-// }
-
 
 @Preview(showBackground = true, name = "HomeScreen Preview")
 @Composable
 fun HomeScreenPreview() {
-    // Para el preview, podemos simular el tema de la app si tienes uno
     ProjectoFinalDetailedTheme {
     HomeScreen(
         onLoginClicked = { println("Login Clickeado") }, // Corregido

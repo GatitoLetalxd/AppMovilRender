@@ -48,11 +48,15 @@ import androidx.navigation.compose.rememberNavController
 import com.example.projectofinal.navigation.AppRoutes
 import com.example.projectofinal.navigation.MainScreenRoutes
 import com.example.projectofinal.R // Importa los recursos de tu proyecto
+import com.example.projectofinal.ui.auth.UploadScreen
 import com.example.projectofinal.data.datastore.UserPreferencesRepository
 import com.example.projectofinal.data.network.RetrofitInstance
 import com.example.projectofinal.data.repository.AuthRepository
+import com.example.projectofinal.data.repository.ImageRepository
 import com.example.projectofinal.viewmodel.AuthViewModel
 import com.example.projectofinal.viewmodel.AuthViewModelFactory
+import com.example.projectofinal.viewmodel.ImageViewModel
+import com.example.projectofinal.viewmodel.ImageViewModelFactory
 
 sealed class MainBottomNavItem(
     val route: String,
@@ -196,7 +200,18 @@ fun MainScreenNavHost(
                 onNavigateToHistory = { navController.navigate(MainScreenRoutes.HISTORY) }
             )
         }
-        composable(MainScreenRoutes.UPLOAD) { UploadScreenPlaceholder() }
+        composable(MainScreenRoutes.UPLOAD) { 
+            val imageRepository = ImageRepository(RetrofitInstance.api)
+            val userPrefsRepository = UserPreferencesRepository(LocalContext.current)
+            val imageViewModel: ImageViewModel = viewModel(
+                factory = ImageViewModelFactory(imageRepository, userPrefsRepository)
+            )
+            
+            UploadScreen(
+                onNavigateBack = { navController.navigateUp() },
+                imageViewModel = imageViewModel
+            )
+        }
         composable(MainScreenRoutes.IMAGES_PROCESSED) { ImagesProcessedScreenPlaceholder() }
         composable(MainScreenRoutes.VIDEOS_PROCESSED) { VideosProcessedScreenPlaceholder() }
         composable(MainScreenRoutes.HISTORY) { HistoryScreenPlaceholder() }

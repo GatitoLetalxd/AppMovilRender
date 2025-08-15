@@ -38,5 +38,12 @@ object NetworkConfig {
         const val ADMIN_HANDLE = "admin/handle" // PUT { requestId, action }
         const val USERS_LIST = "user/list" // GET (todos los usuarios registrados)
         const val ADMIN_REMOVE = "admin/remove/{adminId}" // DELETE
+
+        // Gestión de Imágenes
+        const val UPLOAD_IMAGE = "images/upload"
+        const val GET_USER_IMAGES = "images"
+        const val PROCESS_IMAGE = "images/{imageId}/process"
+        const val DOWNLOAD_IMAGE = "images/{imageId}/download"
+        const val DELETE_IMAGE = "images/{imageId}"
     }
 }
