@@ -41,7 +41,10 @@ data class UserImage(
 
 data class ProcessImageResponse(
     val message: String,
-    val processedImage: ProcessedImage
+    @SerializedName("processedPath")
+    val processedPath: String,
+    @SerializedName("url_procesada")
+    val urlProcesada: String
 )
 
 data class ProcessedImage(

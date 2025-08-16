@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.AccountCircle
@@ -163,7 +164,13 @@ fun MainScreen(
                                     }
                                 }
                             },
-                            icon = { Image(painter = painterResource(id = item.iconResId), contentDescription = item.label) },
+                            icon = { 
+                                Image(
+                                    painter = painterResource(id = item.iconResId), 
+                                    contentDescription = item.label,
+                                    modifier = Modifier.size(20.dp)
+                                ) 
+                            },
                             label = { Text(item.label) }
                         )
                     }

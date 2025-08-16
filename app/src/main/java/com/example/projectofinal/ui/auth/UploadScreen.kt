@@ -22,6 +22,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Brush.Companion.linearGradient
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -35,7 +37,7 @@ import com.example.projectofinal.R
 import com.example.projectofinal.data.model.UserImage
 import com.example.projectofinal.ui.common.GlassmorphicBox
 import com.example.projectofinal.ui.theme.GradientButton
-import com.example.projectofinal.ui.theme.AppBrushes
+import com.example.projectofinal.ui.theme.ProjectoFinalDetailedTheme
 import com.example.projectofinal.utils.Logger
 import com.example.projectofinal.viewmodel.ImageViewModel
 import com.example.projectofinal.viewmodel.ImageUiState
@@ -50,15 +52,17 @@ fun UploadScreen(
     onNavigateBack: () -> Unit,
     imageViewModel: ImageViewModel
 ) {
-    val context = LocalContext.current
-    val uploadState by imageViewModel.uploadState.collectAsState()
-    val imageListState by imageViewModel.imageListState.collectAsState()
-    val processState by imageViewModel.processState.collectAsState()
-    val deleteState by imageViewModel.deleteState.collectAsState()
+    ProjectoFinalDetailedTheme {
+        val context = LocalContext.current
+        val uploadState by imageViewModel.uploadState.collectAsState()
+        val imageListState by imageViewModel.imageListState.collectAsState()
+        val processState by imageViewModel.processState.collectAsState()
+        val deleteState by imageViewModel.deleteState.collectAsState()
+        val processingImages by imageViewModel.processingImages.collectAsState()
 
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-    var showDeleteDialog by remember { mutableStateOf<UserImage?>(null) }
-    var showImageDialog by remember { mutableStateOf<String?>(null) }
+        var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+        var showDeleteDialog by remember { mutableStateOf<UserImage?>(null) }
+        var showImageDialog by remember { mutableStateOf<String?>(null) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -116,9 +120,7 @@ fun UploadScreen(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AppBrushes.primaryGradientButton)
+        modifier = Modifier.fillMaxSize()
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -183,7 +185,12 @@ fun UploadScreen(
                         
                         GradientButton(
                             onClick = { imagePickerLauncher.launch("image/*") },
-                            gradientBrush = AppBrushes.primaryGradientButton
+                            gradientBrush = linearGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                                )
+                            )
                         ) {
                             if (uploadState is ImageUiState.Loading) {
                                 CircularProgressIndicator(
@@ -269,14 +276,15 @@ fun UploadScreen(
                                         verticalArrangement = Arrangement.spacedBy(16.dp)
                                     ) {
                                         images.forEach { image ->
-                                            ImageCard(
-                                                image = image,
-                                                onProcess = { imageViewModel.processImage(image.idImagen) },
-                                                onDelete = { showDeleteDialog = image },
-                                                onImageClick = { imageUri -> showImageDialog = imageUri },
-                                                processState = processState,
-                                                deleteState = deleteState
-                                            )
+                                                                                         ImageCard(
+                                                 image = image,
+                                                 onProcess = { imageViewModel.processImage(image.idImagen) },
+                                                 onDelete = { showDeleteDialog = image },
+                                                 onImageClick = { imageUri -> showImageDialog = imageUri },
+                                                 processState = processState,
+                                                 deleteState = deleteState,
+                                                 isImageProcessing = processingImages.contains(image.idImagen)
+                                             )
                                         }
                                     }
                                 }
@@ -344,6 +352,7 @@ fun UploadScreen(
             }
         )
     }
+    }
 }
 
 @Composable
@@ -353,7 +362,8 @@ fun ImageCard(
     onDelete: () -> Unit,
     onImageClick: (String) -> Unit,
     processState: ImageUiState,
-    deleteState: ImageUiState
+    deleteState: ImageUiState,
+    isImageProcessing: Boolean
 ) {
     val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
     val isoDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
@@ -457,12 +467,12 @@ fun ImageCard(
                         modifier = Modifier.weight(1f),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            text = "Sin procesar",
-                            fontSize = 12.sp,
-                            color = Color.White.copy(alpha = 0.5f),
-                            fontWeight = FontWeight.Medium
-                        )
+                                                 Text(
+                             text = if (isImageProcessing) "Procesando..." else "Sin procesar",
+                             fontSize = 12.sp,
+                             color = if (isImageProcessing) Color.Yellow else Color.White.copy(alpha = 0.5f),
+                             fontWeight = FontWeight.Medium
+                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Box(
                             modifier = Modifier
@@ -471,11 +481,19 @@ fun ImageCard(
                                 .background(Color.White.copy(alpha = 0.1f)),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "Pendiente",
-                                fontSize = 10.sp,
-                                color = Color.White.copy(alpha = 0.5f)
-                            )
+                                                         if (isImageProcessing) {
+                                 CircularProgressIndicator(
+                                     modifier = Modifier.size(40.dp),
+                                     color = Color.Yellow,
+                                     strokeWidth = 3.dp
+                                 )
+                             } else {
+                                 Text(
+                                     text = "Pendiente",
+                                     fontSize = 10.sp,
+                                     color = Color.White.copy(alpha = 0.5f)
+                                 )
+                             }
                         }
                     }
                 }
@@ -489,30 +507,32 @@ fun ImageCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 if (image.urlProcesada == null) {
-                    Button(
-                        onClick = onProcess,
-                        enabled = !isProcessing && !isDeleting,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Blue.copy(alpha = 0.8f)
-                        )
-                    ) {
-                        if (isProcessing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(16.dp),
-                                color = Color.White,
-                                strokeWidth = 2.dp
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.Build,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Procesar")
-                    }
+                                         Button(
+                         onClick = onProcess,
+                         enabled = !isImageProcessing && !isDeleting,
+                         modifier = Modifier.weight(1f),
+                         colors = ButtonDefaults.buttonColors(
+                             containerColor = Color.Blue.copy(alpha = 0.8f)
+                         )
+                     ) {
+                         if (isImageProcessing) {
+                             CircularProgressIndicator(
+                                 modifier = Modifier.size(16.dp),
+                                 color = Color.Yellow,
+                                 strokeWidth = 2.dp
+                             )
+                         } else {
+                             Icon(
+                                 imageVector = Icons.Default.Build,
+                                 contentDescription = null,
+                                 modifier = Modifier.size(16.dp)
+                             )
+                         }
+                         Spacer(modifier = Modifier.width(8.dp))
+                         Text(
+                             if (isImageProcessing) "Procesando..." else "Procesar"
+                         )
+                     }
                 }
 
                 Button(

@@ -55,12 +55,13 @@ class ImageRepository(private val apiService: ApiService) {
         }
     }
 
-    suspend fun processImage(token: String, imageId: Int): Result<ProcessedImage> = withContext(Dispatchers.IO) {
+    suspend fun processImage(token: String, imageId: Int): Result<ProcessImageResponse> = withContext(Dispatchers.IO) {
         try {
             val response = apiService.processImage("Bearer $token", imageId)
             if (response.isSuccessful) {
                 response.body()?.let { processResponse ->
-                    Result.success(processResponse.processedImage)
+                    Logger.d("ImageRepository", "Respuesta de procesamiento recibida: $processResponse")
+                    Result.success(processResponse)
                 } ?: Result.failure(Exception("Respuesta vacía del servidor"))
             } else {
                 val errorBody = response.errorBody()?.string() ?: "Error desconocido"

@@ -1,14 +1,18 @@
 package com.example.projectofinal.ui.theme
+
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource // Added import
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.RowScope // Necesario si quieres que el lambda de contenido sea RowScope
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember // Added import
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,7 +23,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.projectofinal.ui.theme.* // Asume que DarkOnPrimary está aquí
+import com.example.projectofinal.ui.theme.*
 
 @Composable
 fun GradientButton(
@@ -28,19 +32,22 @@ fun GradientButton(
     gradientBrush: Brush,
     shape: Shape = RoundedCornerShape(8.dp),
     contentPadding: PaddingValues = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
-    // Quita textColor y textStyle de esta firma, ya que el contenido los define
-    content: @Composable () -> Unit // Simplificado a @Composable () -> Unit si no necesitas RowScope
-    // content: @Composable RowScope.() -> Unit // Si necesitas RowScope para el contenido
+    content: @Composable () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() } // Added interaction source
     Box(
         modifier = modifier
             .clip(shape)
             .background(gradientBrush)
-            .clickable(onClick = onClick)
+            .clickable( // Modified clickable
+                interactionSource = interactionSource,
+                indication = LocalIndication.current, // Use LocalIndication from Material 3
+                onClick = onClick
+            )
             .padding(contentPadding),
         contentAlignment = Alignment.Center
     ) {
-        content() // El contenido (que incluye el Text con su propio color y estilo) se renderiza aquí
+        content()
     }
 }
 
@@ -58,7 +65,7 @@ fun GradientButton(
     textColor: Color = DarkOnPrimary, // Color para ESTE Text específico
     textStyle: TextStyle = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold) // Estilo para ESTE Text
 ) {
-    GradientButton( // Llama a la primera sobrecarga
+    GradientButton( // Llama a la primera sobrecarga, que ahora contains the fix
         onClick = onClick,
         modifier = modifier,
         gradientBrush = gradientBrush,
